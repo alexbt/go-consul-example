@@ -1,0 +1,40 @@
+version: '2'
+
+services:
+
+  consul:
+    image:  consul:latest
+    hostname: ${MYHOST}
+    ports:
+    - 8500:8500
+    - 8300:8300
+
+  service-one:
+    image: go-service-one:1.0.0
+    environment:
+    - SERVICE_NAME=service-one
+    - CONSUL_HOST=http://${MYHOST}:8500/v1/catalog/service
+    ports:
+     - "8081:8080"
+    depends_on:
+    - registrator
+
+  service-two:
+    image: go-service-two:1.0.0
+    environment:
+    - SERVICE_NAME=service-two
+    - CONSUL_HOST=http://${MYHOST}:8500/v1/catalog/service
+    ports:
+     - "8082:8080"
+    depends_on:
+    - registrator
+
+  registrator:
+    image: gliderlabs/registrator:latest
+    command: "-ip ${MYHOST} consul://${MYHOST}:8500"
+    container_name: registrator
+    hostname: ${MYHOST}
+    depends_on:
+    - consul
+    volumes:
+    - /var/run/docker.sock:/tmp/docker.sock
